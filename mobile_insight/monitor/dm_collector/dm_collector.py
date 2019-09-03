@@ -124,52 +124,54 @@ class DMCollector(Monitor):
         print "PHY COM: %s" % self.phy_ser_name
         print "PHY BAUD RATE: %d" % self.phy_baudrate
 
-        try:
-            # Open COM ports
-            phy_ser = serial.Serial(self.phy_ser_name,
+        while True:
+            try:
+                # Open COM ports
+                phy_ser = serial.Serial(self.phy_ser_name,
                                     baudrate=self.phy_baudrate,
                                     timeout=None, rtscts=True, dsrdtr=True)
 
-            # Disable logs
-            self.log_debug("Disable logs") 
-            dm_collector_c.disable_logs(phy_ser)
+                # Disable logs
+                self.log_debug("Disable logs") 
+                dm_collector_c.disable_logs(phy_ser)
 
-            # Enable logs
-            self.log_debug("Enable logs")
-            dm_collector_c.enable_logs(phy_ser, self._type_names)
+                # Enable logs
+                self.log_debug("Enable logs")
+                dm_collector_c.enable_logs(phy_ser, self._type_names)
 
-            # Read log packets from serial port and decode their contents
-            while True:
-                s = phy_ser.read(64)
-                # s = phy_ser.read(1)
-                dm_collector_c.feed_binary(s)
+                # Read log packets from serial port and decode their contents
+                while True:
+                    s = phy_ser.read(64)
+                    # s = phy_ser.read(1)
+                    dm_collector_c.feed_binary(s)
 
-                decoded = dm_collector_c.receive_log_packet(self._skip_decoding,
+                    decoded = dm_collector_c.receive_log_packet(self._skip_decoding,
                                                             True,   # include_timestamp
                                                             )
-                if decoded:
-                    try:
-                        # packet = DMLogPacket(decoded)
-                        packet = DMLogPacket(decoded[0])
-                        type_id = packet.get_type_id()
+                    if decoded:
+                        try:
+                            # packet = DMLogPacket(decoded)
+                            packet = DMLogPacket(decoded[0])
+                            type_id = packet.get_type_id()
                         # print d["type_id"], d["timestamp"]
                         # xml = packet.decode_xml()
                         # print xml
                         # print ""
                         # Send event to analyzers
-                        event = Event(timeit.default_timer(),
+                            event = Event(timeit.default_timer(),
                                       type_id,
                                       packet)
-                        self.send(event)
-                    except FormatError as e:
-                        # skip this packet
-                        print "FormatError: ", e
+                            self.send(event)
+                        except FormatError as e:
+                            # skip this packet
+                            print "FormatError: ", e
 
-        except (KeyboardInterrupt, RuntimeError) as e:
-            print "\n\n%s Detected: Disabling all logs" % type(e).__name__
+            except (KeyboardInterrupt, RuntimeError) as e:
+                print "\n\n%s Detected: Disabling all logs" % type(e).__name__
             # Disable logs
-            dm_collector_c.disable_logs(phy_ser)
-            phy_ser.close()
-            sys.exit(e)
-        except Exception as e:
-            sys.exit(e)
+                dm_collector_c.disable_logs(phy_ser)
+                phy_ser.close()
+                sys.exit(e)
+            except Exception as e:
+            print("No messages to read")
+            pass
