@@ -173,5 +173,5 @@ class DMCollector(Monitor):
                 phy_ser.close()
                 sys.exit(e)
             except Exception as e:
-            print("No messages to read")
-            pass
+                print("No messages to read")
+                pass
